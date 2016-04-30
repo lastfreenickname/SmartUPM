@@ -20,6 +20,7 @@
  */
 package com._17od.upm.crypto;
 
+
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
@@ -33,17 +34,18 @@ import org.bouncycastle.crypto.generators.PKCS12ParametersGenerator;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
 import org.bouncycastle.crypto.paddings.PKCS7Padding;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import smartupm.jcardmngr.*;
 
 
 public class EncryptionService {
 
     private static final String randomAlgorithm = "SHA1PRNG";
-    public static final int SALT_LENGTH = 8;
-
+    public static final short SALT_LENGTH = 8;
     private byte[] salt;
     private BufferedBlockCipher encryptCipher;
     private BufferedBlockCipher decryptCipher;
-
+    private AppletInterface appIface;
+    
     public EncryptionService(char[] password) throws CryptoException {
         try {
             this.salt = generateSalt();
@@ -59,10 +61,15 @@ public class EncryptionService {
     }
 
     public void initCipher(char[] password) {
-        PBEParametersGenerator keyGenerator = new PKCS12ParametersGenerator(new SHA256Digest());
-        keyGenerator.init(PKCS12ParametersGenerator.PKCS12PasswordToBytes(password), salt, 20);
-        CipherParameters keyParams = keyGenerator.generateDerivedParameters(256, 128);
+        byte[] pass= new byte [SALT_LENGTH];
+        appIface=new AppletInterface();
+        pass=appIface.sendApduAndReceive(AppletInterface.SEND_INS_RETURN,(byte)0, (byte) 0, salt);
         
+        PBEParametersGenerator keyGenerator = new PKCS12ParametersGenerator(new SHA256Digest());
+        keyGenerator.init(pass, salt, 20);
+        CipherParameters keyParams = keyGenerator.generateDerivedParameters(256, 128);
+                       
+                
         encryptCipher = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()), new PKCS7Padding());
         encryptCipher.init(true, keyParams);
         decryptCipher = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()), new PKCS7Padding());
