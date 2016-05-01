@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.smartcardio.CardException;
 
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
@@ -54,17 +55,17 @@ public class EncryptionService {
     private BufferedBlockCipher decryptCipher;
     private static AppletInterface appIface;
     
-    public EncryptionService(char[] databasePin) throws SmartUPMAppletException, InvalidPasswordException {
+    public EncryptionService(char[] databasePin) throws SmartUPMAppletException, InvalidPasswordException, CardException {
         this(databasePin,null);
     }
 
-    public EncryptionService(char[] databasePin, byte[] dbid) throws SmartUPMAppletException, InvalidPasswordException {
+    public EncryptionService(char[] databasePin, byte[] dbid) throws SmartUPMAppletException, InvalidPasswordException, CardException {
         if (appIface==null) appIface=new AppletInterface();  //the check for null is needed because of card simulator, to have applet persistency
         this.dbid=dbid;
         initCipher(databasePin);
     }
 
-    private void initCipher(char[] databasePin) throws SmartUPMAppletException, InvalidPasswordException {
+    private void initCipher(char[] databasePin) throws SmartUPMAppletException, InvalidPasswordException, CardException {
         byte[] databasePinBytes=new String(databasePin).getBytes(Charset.forName("UTF-8"));
         try{
             if (dbid==null) {
