@@ -59,6 +59,7 @@ import com._17od.upm.util.FileMonitor;
 import com._17od.upm.util.Preferences;
 import com._17od.upm.util.Translator;
 import com._17od.upm.util.Util;
+import javax.smartcardio.CardException;
 import smartupm.jcardmngr.SmartUPMAppletException;
 
 
@@ -92,7 +93,7 @@ public class DatabaseActions {
      * @throws CryptoException
      * @throws IOException
      */
-    public void newDatabase() throws IOException, CryptoException, InvalidPasswordException, SmartUPMAppletException {
+    public void newDatabase() throws IOException, CryptoException, InvalidPasswordException, SmartUPMAppletException, CardException {
 
         File newDatabaseFile = getSaveAsFile(Translator.translate("newPasswordDatabase"));
         if (newDatabaseFile == null) {
@@ -155,7 +156,7 @@ public class DatabaseActions {
 
 // Changing database PIN not supported
     
-//    public void changeMasterPassword() throws IOException, ProblemReadingDatabaseFile, CryptoException, PasswordDatabaseException, TransportException, SmartUPMAppletException {
+//    public void changeMasterPassword() throws IOException, ProblemReadingDatabaseFile, CryptoException, PasswordDatabaseException, TransportException, SmartUPMAppletException, CardException {
 //
 //        if (getLatestVersionOfDatabase()) {
 //            //The first task is to get the current master password
@@ -367,12 +368,12 @@ public class DatabaseActions {
     }
 
 
-    public void openDatabase(String databaseFilename) throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
+    public void openDatabase(String databaseFilename) throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException, CardException {
         openDatabase(databaseFilename, null);
     }
 
 
-    public void openDatabase(String databaseFilename, char[] password) throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
+    public void openDatabase(String databaseFilename, char[] password) throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException, CardException {
 
         boolean passwordCorrect = false;
         boolean okClicked = true;
@@ -406,7 +407,7 @@ public class DatabaseActions {
     }
 
 
-    public void openDatabase() throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
+    public void openDatabase() throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException, CardException {
         JFileChooser fc = new JFileChooser();
         fc.setDialogTitle(Translator.translate("openDatabase"));
         int returnVal = fc.showOpenDialog(mainWindow);
@@ -425,7 +426,7 @@ public class DatabaseActions {
     }
 
 
-    public void deleteAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException, SmartUPMAppletException {
+    public void deleteAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException, SmartUPMAppletException, CardException {
 
         if (getLatestVersionOfDatabase()) {
             SortedListModel listview = (SortedListModel) mainWindow.getAccountsListview().getModel();
@@ -448,7 +449,7 @@ public class DatabaseActions {
     }
 
 
-    public void addAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException, SmartUPMAppletException {
+    public void addAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException, SmartUPMAppletException, CardException {
 
         if (getLatestVersionOfDatabase()) {
 
@@ -480,7 +481,7 @@ public class DatabaseActions {
     }
 
 
-    private boolean getLatestVersionOfDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
+    private boolean getLatestVersionOfDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException, CardException {
         boolean latestVersionDownloaded = false;
 
         // Ensure we're working with the latest version of the database
@@ -517,7 +518,7 @@ public class DatabaseActions {
 
     public void editAccount(String accountName) throws TransportException,
             ProblemReadingDatabaseFile, IOException, CryptoException,
-            PasswordDatabaseException, InvalidPasswordException, UPMException, SmartUPMAppletException {
+            PasswordDatabaseException, InvalidPasswordException, UPMException, SmartUPMAppletException, CardException {
 
         if (getLatestVersionOfDatabase()) {
             AccountInformation accInfo = database.getAccount(accountName);
@@ -652,7 +653,7 @@ public class DatabaseActions {
     }
 
 
-    public void showDatabaseProperties() throws ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
+    public void showDatabaseProperties() throws ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException, CardException {
         try {
             if (getLatestVersionOfDatabase()) {
                 DatabasePropertiesDialog dbPropsDialog = new DatabasePropertiesDialog(mainWindow, getAccountNames(), database);
@@ -674,7 +675,7 @@ public class DatabaseActions {
     }
 
 
-    public void openDatabaseFromURL() throws TransportException, IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
+    public void openDatabaseFromURL() throws TransportException, IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException, CardException {
 
         // Ask the user for the remote database location
         OpenDatabaseFromURLDialog openDBDialog = new OpenDatabaseFromURLDialog(mainWindow);
@@ -714,7 +715,7 @@ public class DatabaseActions {
     }
 
     public void reloadDatabase()
-            throws InvalidPasswordException, ProblemReadingDatabaseFile, IOException, SmartUPMAppletException {
+            throws InvalidPasswordException, ProblemReadingDatabaseFile, IOException, SmartUPMAppletException, CardException {
         PasswordDatabase reloadedDb = null;
         try {
             reloadedDb = dbPers.load(database.getDatabaseFile());
@@ -747,7 +748,7 @@ public class DatabaseActions {
 
     public void reloadDatabaseBefore(ChangeDatabaseAction editAction)
             throws InvalidPasswordException, ProblemReadingDatabaseFile,
-            IOException, SmartUPMAppletException {
+            IOException, SmartUPMAppletException, CardException {
         boolean proceedWithAction = false;
         if (this.databaseNeedsReload) {
             int answer = JOptionPane.showConfirmDialog(mainWindow,
@@ -767,7 +768,7 @@ public class DatabaseActions {
     }
 
     public boolean reloadDatabaseFromDisk() throws InvalidPasswordException,
-            ProblemReadingDatabaseFile, IOException, SmartUPMAppletException {
+            ProblemReadingDatabaseFile, IOException, SmartUPMAppletException, CardException {
         boolean reloadSuccessful = false;
 
         PasswordDatabase reloadedDb = null;
@@ -806,7 +807,7 @@ public class DatabaseActions {
         return reloadSuccessful;
     }
 
-    public boolean syncWithRemoteDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
+    public boolean syncWithRemoteDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException, CardException {
 
         boolean syncSuccessful = false;
 
@@ -944,7 +945,7 @@ public class DatabaseActions {
     }
 
 
-    public void importAccounts() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
+    public void importAccounts() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException, CardException {
         if (getLatestVersionOfDatabase()) {
             // Prompt for the file to import
             JFileChooser fc = new JFileChooser();

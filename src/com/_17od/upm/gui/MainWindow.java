@@ -86,6 +86,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.smartcardio.CardException;
 import smartupm.jcardmngr.SmartUPMAppletException;
 
 /**
@@ -411,20 +412,23 @@ public class MainWindow extends JFrame implements ActionListener {
 			public void keyPressed(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_DELETE) {
 
-					try {
-						dbActions.reloadDatabaseBefore(new DeleteAccountAction());
-					} catch (InvalidPasswordException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (ProblemReadingDatabaseFile e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (SmartUPMAppletException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+                                    try {
+                                            dbActions.reloadDatabaseBefore(new DeleteAccountAction());
+                                    } catch (InvalidPasswordException e1) {
+                                            // TODO Auto-generated catch block
+                                            e1.printStackTrace();
+                                    } catch (ProblemReadingDatabaseFile e1) {
+                                            // TODO Auto-generated catch block
+                                            e1.printStackTrace();
+                                    } catch (IOException e1) {
+                                            // TODO Auto-generated catch block
+                                            e1.printStackTrace();
+                                    } catch (SmartUPMAppletException e1) {
+                                            // TODO Auto-generated catch block
+                                            e1.printStackTrace();
+                                    } catch (CardException e1) {
+                                            // TODO Auto-generated catch block                                        
+                                            e1.printStackTrace();
                                     }
 
 				}

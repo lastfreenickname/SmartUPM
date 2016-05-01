@@ -36,6 +36,7 @@ import java.util.Iterator;
 import com._17od.upm.crypto.CryptoException;
 import com._17od.upm.crypto.EncryptionService;
 import com._17od.upm.crypto.InvalidPasswordException;
+import javax.smartcardio.CardException;
 import smartupm.jcardmngr.SmartUPMAppletException;
 
 /**
@@ -76,7 +77,7 @@ public class PasswordDatabasePersistence {
      * @throws CryptoException
      * @throws com._17od.upm.crypto.InvalidPasswordException
      */
-    public PasswordDatabasePersistence(char[] databasePin) throws CryptoException, InvalidPasswordException, SmartUPMAppletException {
+    public PasswordDatabasePersistence(char[] databasePin) throws CryptoException, InvalidPasswordException, SmartUPMAppletException, CardException {
         encryptionService = new EncryptionService(databasePin);
     }
 
@@ -156,7 +157,7 @@ public class PasswordDatabasePersistence {
         }
      }
 
-    public PasswordDatabase load(File databaseFile, char[] dbPin) throws IOException, ProblemReadingDatabaseFile, InvalidPasswordException, CryptoException, SmartUPMAppletException {
+    public PasswordDatabase load(File databaseFile, char[] dbPin) throws IOException, ProblemReadingDatabaseFile, InvalidPasswordException, CryptoException, SmartUPMAppletException, CardException {
 
         byte[] fullDatabase;
         fullDatabase = readFile(databaseFile);

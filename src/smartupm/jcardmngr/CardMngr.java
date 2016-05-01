@@ -15,6 +15,7 @@ import javax.smartcardio.*;
 /**
  *
  * @author xsvenda
+ * Modified for PV204 project SmartUPM by Petr Vesely
  */
 
 public class CardMngr {
@@ -24,7 +25,7 @@ public class CardMngr {
     
     // Simulator related attributes
     private static CAD m_cad = null;
-    private static JavaxSmartCardInterface m_simulator = null;
+//    private static JavaxSmartCardInterface m_simulator = null;
 
     
     private final byte selectCM[] = {
@@ -41,12 +42,12 @@ public class CardMngr {
 //    public final static short DATA_RECORD_LENGTH = (short) 0x80; // 128B per record
 //    public final static short NUMBER_OF_RECORDS = (short) 0x0a; // 10 records
 
-    public boolean ConnectToCard() throws Exception {
+    public boolean ConnectToCard() throws CardException {
         // TRY ALL READERS, FIND FIRST SELECTABLE
         List terminalList = GetReaderList();
 
         if (terminalList.isEmpty()) {
-            System.out.println("No terminals found");
+            throw new CardException("No terminals found");
         }
 
         //List numbers of Card readers
@@ -70,72 +71,32 @@ public class CardMngr {
         return cardFound;
     }
 
-    public void DisconnectFromCard() throws Exception {
-        if (m_card != null) {
-            m_card.disconnect(false);
-            m_card = null;
+    public void DisconnectFromCard() throws CardException {
+        
+        try{
+            if (m_card != null) {
+                m_card.disconnect(false);
+                m_card = null;
+            }
+        }
+        catch (Exception ex){
+            throw new CardException(ex.getMessage());
         }
     }
-
-//    public byte[] GetCPLCData() throws Exception {
-//        byte[] data;
-//
-//        // TODO: Modify to obtain CPLC data
-//        byte apdu[] = new byte[HEADER_LENGTH];
-//        apdu[OFFSET_CLA] = (byte) 0x00;
-//        apdu[OFFSET_INS] = (byte) 0x00;
-//        apdu[OFFSET_P1] = (byte) 0x00;
-//        apdu[OFFSET_P2] = (byte) 0x00;
-//        apdu[OFFSET_LC] = (byte) 0x00;
-//
-//        ResponseAPDU resp = sendAPDU(apdu);
-//        if (resp.getSW() != 0x9000) { // 0x9000 is "OK"
-//            System.out.println("Fail to obtain card's response data");
-//            data = null;
-//        } else {
-//            byte temp[] = resp.getBytes();
-//            data = new byte[temp.length - 2];
-//            System.arraycopy(temp, 0, data, 0, temp.length - 2);
-//            // Last two bytes are status word (also obtainable by resp.getSW())
-//            // Take a look at ISO7816_status_words.txt for common codes
-//        }
-//
-//        return data;
-//    }
-
-//    public void ProbeCardCommands() throws Exception {
-//        // TODO: modify to probe for instruction
-//        for (int i = 0; i <= 0; i++) {
-//            byte apdu[] = new byte[HEADER_LENGTH];
-//            apdu[OFFSET_CLA] = (byte) 0x00;
-//            apdu[OFFSET_INS] = (byte) 0x00;
-//            apdu[OFFSET_P1] = (byte) 0x00;
-//            apdu[OFFSET_P2] = (byte) 0x00;
-//            apdu[OFFSET_LC] = (byte) 0x00;
-//
-//            ResponseAPDU resp = sendAPDU(apdu);
-//            
-//            System.out.println("Response: " + Integer.toHexString(resp.getSW()));  
-//            
-//            if (resp.getSW() != 0x6D00) { // Note: 0x6D00 is SW_INS_NOT_SUPPORTED
-//                // something?
-//            }
-//        }
-//    }
     
-    public List GetReaderList() {
+    public List GetReaderList() throws CardException {
         try {
             TerminalFactory factory = TerminalFactory.getDefault();
             List readersList = factory.terminals().list();
             return readersList;
         } catch (Exception ex) {
-            System.out.println("Exception : " + ex);
-            return null;
+            throw new CardException(ex.getMessage());
         }
     }
 
-    public ResponseAPDU sendAPDU(byte apdu[]) throws Exception {
-        CommandAPDU commandAPDU = new CommandAPDU(apdu);
+    public ResponseAPDU sendAPDU(byte apdu[]) throws CardException {
+        CommandAPDU commandAPDU;
+        commandAPDU = new CommandAPDU(apdu);
 
         System.out.println(apdu.length + ">>>>");
         System.out.println(commandAPDU);
@@ -185,29 +146,28 @@ public class CardMngr {
         return (buf.toString());
     }
     
-    
-    public boolean prepareLocalSimulatorApplet(byte[] appletAIDArray, byte[] installData, Class appletClass) {
-        System.setProperty("com.licel.jcardsim.terminal.type", "2");
-        m_cad = new CAD(System.getProperties());
-        m_simulator = (JavaxSmartCardInterface) m_cad.getCardInterface();
-        AID appletAID = new AID(appletAIDArray, (short) 0, (byte) appletAIDArray.length);
-
-        AID appletAIDRes =  m_simulator.installApplet(appletAID, appletClass, installData, (short) 0, (byte) installData.length);
-        return m_simulator.selectApplet(appletAID);
-    }
-    
-    public byte[] sendAPDUSimulator(byte apdu[]) throws Exception {
-        System.out.println(apdu.length + " >>>>");
-        System.out.println(bytesToHex(apdu));
-
-        byte[] responseBytes = m_simulator.transmitCommand(apdu);
-
-        System.out.println(bytesToHex(responseBytes));
-        System.out.println("<<<< " + responseBytes.length);
-
-        return responseBytes;
-    }
-    
-    
+//    
+//    public boolean prepareLocalSimulatorApplet(byte[] appletAIDArray, byte[] installData, Class appletClass) {
+//        System.setProperty("com.licel.jcardsim.terminal.type", "2");
+//        m_cad = new CAD(System.getProperties());
+//        m_simulator = (JavaxSmartCardInterface) m_cad.getCardInterface();
+//        AID appletAID = new AID(appletAIDArray, (short) 0, (byte) appletAIDArray.length);
+//
+//        AID appletAIDRes =  m_simulator.installApplet(appletAID, appletClass, installData, (short) 0, (byte) installData.length);
+//        return m_simulator.selectApplet(appletAID);
+//    }
+//    
+//    public byte[] sendAPDUSimulator(byte apdu[]) throws Exception {
+//        System.out.println(apdu.length + " >>>>");
+//        System.out.println(bytesToHex(apdu));
+//
+//        byte[] responseBytes = m_simulator.transmitCommand(apdu);
+//
+//        System.out.println(bytesToHex(responseBytes));
+//        System.out.println("<<<< " + responseBytes.length);
+//
+//        return responseBytes;
+//    }
+   
 }
 
