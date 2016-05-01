@@ -10,6 +10,8 @@ public class CardApplet extends javacard.framework.Applet
     // MAIN INSTRUCTION CLASS
     final static byte CLA_HEADER                = (byte) 0xB0;
 
+    //testing git
+    
     // INSTRUCTIONS
     final static byte INS_SETKEY                    = (byte) 0x52;
     final static byte INS_GETKEY                    = (byte) 0x53;
