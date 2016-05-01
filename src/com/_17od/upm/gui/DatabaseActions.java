@@ -59,6 +59,7 @@ import com._17od.upm.util.FileMonitor;
 import com._17od.upm.util.Preferences;
 import com._17od.upm.util.Translator;
 import com._17od.upm.util.Util;
+import smartupm.jcardmngr.SmartUPMAppletException;
 
 
 public class DatabaseActions {
@@ -91,7 +92,7 @@ public class DatabaseActions {
      * @throws CryptoException
      * @throws IOException
      */
-    public void newDatabase() throws IOException, CryptoException {
+    public void newDatabase() throws IOException, CryptoException, InvalidPasswordException, SmartUPMAppletException {
 
         File newDatabaseFile = getSaveAsFile(Translator.translate("newPasswordDatabase"));
         if (newDatabaseFile == null) {
@@ -152,70 +153,71 @@ public class DatabaseActions {
         }
     }
 
-
-    public void changeMasterPassword() throws IOException, ProblemReadingDatabaseFile, CryptoException, PasswordDatabaseException, TransportException {
-
-        if (getLatestVersionOfDatabase()) {
-            //The first task is to get the current master password
-            boolean passwordCorrect = false;
-            boolean okClicked = true;
-            do {
-                char[] password = askUserForPassword(Translator.translate("enterDatabasePassword"));
-                if (password == null) {
-                    okClicked = false;
-                } else {
-                    try {
-                        dbPers.load(database.getDatabaseFile(), password);
-                        passwordCorrect = true;
-                    } catch (InvalidPasswordException e) {
-                        JOptionPane.showMessageDialog(mainWindow, Translator.translate("incorrectPassword"));
-                    }
-                }
-            } while (!passwordCorrect && okClicked);
-
-            //If the master password was entered correctly then the next step is to get the new master password
-            if (passwordCorrect == true) {
-
-                    final JPasswordField masterPassword = new JPasswordField("");
-                    boolean passwordsMatch = false;
-                    Object buttonClicked;
-
-                    //Ask the user for the new master password
-                    //This loop will continue until the two passwords entered match or until the user hits the cancel button
-                    do {
-
-
-                        JPasswordField confirmedMasterPassword = new JPasswordField("");
-                        JOptionPane pane = new JOptionPane(new Object[] {Translator.translate("enterNewMasterPassword"), masterPassword, Translator.translate("confirmation"), confirmedMasterPassword}, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
-                        JDialog dialog = pane.createDialog(mainWindow, Translator.translate("changeMasterPassword"));
-                        dialog.addWindowFocusListener(new WindowAdapter() {
-                            public void windowGainedFocus(WindowEvent e) {
-                                masterPassword.requestFocusInWindow();
-                            }
-                        });
-                        dialog.show();
-
-                        buttonClicked = pane.getValue();
-                        if (buttonClicked.equals(new Integer(JOptionPane.OK_OPTION))) {
-                            if (!Arrays.equals(masterPassword.getPassword(), confirmedMasterPassword.getPassword())) {
-                                JOptionPane.showMessageDialog(mainWindow, Translator.translate("passwordsDontMatch"));
-                            } else {
-                                passwordsMatch = true;
-                            }
-                        }
-
-                    } while (buttonClicked.equals(new Integer(JOptionPane.OK_OPTION)) && !passwordsMatch);
-
-                    //If the user clicked OK and the passwords match then change the database password
-                    if (buttonClicked.equals(new Integer(JOptionPane.OK_OPTION)) && passwordsMatch) {
-                        this.dbPers.getEncryptionService().initCipher(masterPassword.getPassword());
-                        saveDatabase();
-                    }
-
-            }
-        }
-
-    }
+// Changing database PIN not supported
+    
+//    public void changeMasterPassword() throws IOException, ProblemReadingDatabaseFile, CryptoException, PasswordDatabaseException, TransportException, SmartUPMAppletException {
+//
+//        if (getLatestVersionOfDatabase()) {
+//            //The first task is to get the current master password
+//            boolean passwordCorrect = false;
+//            boolean okClicked = true;
+//            do {
+//                char[] password = askUserForPassword(Translator.translate("enterDatabasePassword"));
+//                if (password == null) {
+//                    okClicked = false;
+//                } else {
+//                    try {
+//                        dbPers.load(database.getDatabaseFile(), password);
+//                        passwordCorrect = true;
+//                    } catch (InvalidPasswordException e) {
+//                        JOptionPane.showMessageDialog(mainWindow, Translator.translate("incorrectPassword"));
+//                    }
+//                }
+//            } while (!passwordCorrect && okClicked);
+//
+//            //If the master password was entered correctly then the next step is to get the new master password
+//            if (passwordCorrect == true) {
+//
+//                    final JPasswordField masterPassword = new JPasswordField("");
+//                    boolean passwordsMatch = false;
+//                    Object buttonClicked;
+//
+//                    //Ask the user for the new master password
+//                    //This loop will continue until the two passwords entered match or until the user hits the cancel button
+//                    do {
+//
+//
+//                        JPasswordField confirmedMasterPassword = new JPasswordField("");
+//                        JOptionPane pane = new JOptionPane(new Object[] {Translator.translate("enterNewMasterPassword"), masterPassword, Translator.translate("confirmation"), confirmedMasterPassword}, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+//                        JDialog dialog = pane.createDialog(mainWindow, Translator.translate("changeMasterPassword"));
+//                        dialog.addWindowFocusListener(new WindowAdapter() {
+//                            public void windowGainedFocus(WindowEvent e) {
+//                                masterPassword.requestFocusInWindow();
+//                            }
+//                        });
+//                        dialog.show();
+//
+//                        buttonClicked = pane.getValue();
+//                        if (buttonClicked.equals(new Integer(JOptionPane.OK_OPTION))) {
+//                            if (!Arrays.equals(masterPassword.getPassword(), confirmedMasterPassword.getPassword())) {
+//                                JOptionPane.showMessageDialog(mainWindow, Translator.translate("passwordsDontMatch"));
+//                            } else {
+//                                passwordsMatch = true;
+//                            }
+//                        }
+//
+//                    } while (buttonClicked.equals(new Integer(JOptionPane.OK_OPTION)) && !passwordsMatch);
+//
+//                    //If the user clicked OK and the passwords match then change the database password
+//                    if (buttonClicked.equals(new Integer(JOptionPane.OK_OPTION)) && passwordsMatch) {
+//                        this.dbPers.getEncryptionService().initCipher(masterPassword.getPassword());
+//                        saveDatabase();
+//                    }
+//
+//            }
+//        }
+//
+//    }
 
 
     public void errorHandler(Exception e) {
@@ -234,7 +236,7 @@ public class DatabaseActions {
         mainWindow.getSearchField().setText("");
         mainWindow.getSearchIcon().setEnabled(false);
         mainWindow.getResetSearchButton().setEnabled(false);
-        mainWindow.getChangeMasterPasswordMenuItem().setEnabled(false);
+ //       mainWindow.getChangeMasterPasswordMenuItem().setEnabled(false);
         mainWindow.getDatabasePropertiesMenuItem().setEnabled(false);
         mainWindow.getExportMenuItem().setEnabled(false);
         mainWindow.getImportMenuItem().setEnabled(false);
@@ -268,7 +270,7 @@ public class DatabaseActions {
         mainWindow.getSearchField().setText("");
         mainWindow.getSearchIcon().setEnabled(true);
         mainWindow.getResetSearchButton().setEnabled(true);
-        mainWindow.getChangeMasterPasswordMenuItem().setEnabled(true);
+ //       mainWindow.getChangeMasterPasswordMenuItem().setEnabled(true);
         mainWindow.getDatabasePropertiesMenuItem().setEnabled(true);
         mainWindow.getExportMenuItem().setEnabled(true);
         mainWindow.getImportMenuItem().setEnabled(true);
@@ -365,12 +367,12 @@ public class DatabaseActions {
     }
 
 
-    public void openDatabase(String databaseFilename) throws IOException, ProblemReadingDatabaseFile, CryptoException {
+    public void openDatabase(String databaseFilename) throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
         openDatabase(databaseFilename, null);
     }
 
 
-    public void openDatabase(String databaseFilename, char[] password) throws IOException, ProblemReadingDatabaseFile, CryptoException {
+    public void openDatabase(String databaseFilename, char[] password) throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
 
         boolean passwordCorrect = false;
         boolean okClicked = true;
@@ -404,7 +406,7 @@ public class DatabaseActions {
     }
 
 
-    public void openDatabase() throws IOException, ProblemReadingDatabaseFile, CryptoException {
+    public void openDatabase() throws IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
         JFileChooser fc = new JFileChooser();
         fc.setDialogTitle(Translator.translate("openDatabase"));
         int returnVal = fc.showOpenDialog(mainWindow);
@@ -423,7 +425,7 @@ public class DatabaseActions {
     }
 
 
-    public void deleteAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException {
+    public void deleteAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException, SmartUPMAppletException {
 
         if (getLatestVersionOfDatabase()) {
             SortedListModel listview = (SortedListModel) mainWindow.getAccountsListview().getModel();
@@ -446,7 +448,7 @@ public class DatabaseActions {
     }
 
 
-    public void addAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException {
+    public void addAccount() throws IOException, CryptoException, TransportException, ProblemReadingDatabaseFile, PasswordDatabaseException, SmartUPMAppletException {
 
         if (getLatestVersionOfDatabase()) {
 
@@ -478,7 +480,7 @@ public class DatabaseActions {
     }
 
 
-    private boolean getLatestVersionOfDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException {
+    private boolean getLatestVersionOfDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
         boolean latestVersionDownloaded = false;
 
         // Ensure we're working with the latest version of the database
@@ -515,7 +517,7 @@ public class DatabaseActions {
 
     public void editAccount(String accountName) throws TransportException,
             ProblemReadingDatabaseFile, IOException, CryptoException,
-            PasswordDatabaseException, InvalidPasswordException, UPMException {
+            PasswordDatabaseException, InvalidPasswordException, UPMException, SmartUPMAppletException {
 
         if (getLatestVersionOfDatabase()) {
             AccountInformation accInfo = database.getAccount(accountName);
@@ -650,7 +652,7 @@ public class DatabaseActions {
     }
 
 
-    public void showDatabaseProperties() throws ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException {
+    public void showDatabaseProperties() throws ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
         try {
             if (getLatestVersionOfDatabase()) {
                 DatabasePropertiesDialog dbPropsDialog = new DatabasePropertiesDialog(mainWindow, getAccountNames(), database);
@@ -672,7 +674,7 @@ public class DatabaseActions {
     }
 
 
-    public void openDatabaseFromURL() throws TransportException, IOException, ProblemReadingDatabaseFile, CryptoException {
+    public void openDatabaseFromURL() throws TransportException, IOException, ProblemReadingDatabaseFile, CryptoException, SmartUPMAppletException {
 
         // Ask the user for the remote database location
         OpenDatabaseFromURLDialog openDBDialog = new OpenDatabaseFromURLDialog(mainWindow);
@@ -712,7 +714,7 @@ public class DatabaseActions {
     }
 
     public void reloadDatabase()
-            throws InvalidPasswordException, ProblemReadingDatabaseFile, IOException {
+            throws InvalidPasswordException, ProblemReadingDatabaseFile, IOException, SmartUPMAppletException {
         PasswordDatabase reloadedDb = null;
         try {
             reloadedDb = dbPers.load(database.getDatabaseFile());
@@ -745,7 +747,7 @@ public class DatabaseActions {
 
     public void reloadDatabaseBefore(ChangeDatabaseAction editAction)
             throws InvalidPasswordException, ProblemReadingDatabaseFile,
-            IOException {
+            IOException, SmartUPMAppletException {
         boolean proceedWithAction = false;
         if (this.databaseNeedsReload) {
             int answer = JOptionPane.showConfirmDialog(mainWindow,
@@ -765,7 +767,7 @@ public class DatabaseActions {
     }
 
     public boolean reloadDatabaseFromDisk() throws InvalidPasswordException,
-            ProblemReadingDatabaseFile, IOException {
+            ProblemReadingDatabaseFile, IOException, SmartUPMAppletException {
         boolean reloadSuccessful = false;
 
         PasswordDatabase reloadedDb = null;
@@ -804,7 +806,7 @@ public class DatabaseActions {
         return reloadSuccessful;
     }
 
-    public boolean syncWithRemoteDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException {
+    public boolean syncWithRemoteDatabase() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
 
         boolean syncSuccessful = false;
 
@@ -942,7 +944,7 @@ public class DatabaseActions {
     }
 
 
-    public void importAccounts() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException {
+    public void importAccounts() throws TransportException, ProblemReadingDatabaseFile, IOException, CryptoException, PasswordDatabaseException, SmartUPMAppletException {
         if (getLatestVersionOfDatabase()) {
             // Prompt for the file to import
             JFileChooser fc = new JFileChooser();

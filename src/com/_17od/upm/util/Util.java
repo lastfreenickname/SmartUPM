@@ -89,5 +89,18 @@ public class Util {
         }
         return true;
       }
+    
+    public static byte[] mergeArrays(byte[] a, byte[] b){
+        byte[] result=new byte[a.length+b.length];
+        System.arraycopy(a, 0, result, 0, a.length);
+        System.arraycopy(b, 0, result, a.length, b.length);
+        return result;    
+    }
+    
+    public static byte[] cutArray(byte[] array, int offset, int length){
+        byte[] result=new byte[Math.min(length, array.length-offset)];
+        System.arraycopy(array, offset, result, 0, Math.min(length, array.length-offset));
+        return result;
+    }
 
 }

@@ -34,10 +34,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import com._17od.upm.crypto.CryptoException;
-import com._17od.upm.crypto.DESDecryptionService;
 import com._17od.upm.crypto.EncryptionService;
 import com._17od.upm.crypto.InvalidPasswordException;
-import com._17od.upm.util.Util;
+import smartupm.jcardmngr.SmartUPMAppletException;
 
 /**
  * This factory is used to load or create a PasswordDatabase. Different versions
@@ -56,32 +55,29 @@ import com._17od.upm.util.Util;
  *   DB_HEADER = Was used to store the structural version of the database (pre version 2)
  *   DB_OPTIONS = Options relating to the database
  *   ACCOUNTS = The account information
- *   
- *   From version 2 the db version is stored unencrypted at the start of the file.
- *   This allows for cryptographic changes in the database structure. Before this
- *   we had to know how to unencrypt the database before we could find out the version number.
  */
 public class PasswordDatabasePersistence {
 
-    private static final String FILE_HEADER = "UPM";
+    private static final String FILE_HEADER = "SmartUPM";
     private static final int DB_VERSION = 3;
 
     private EncryptionService encryptionService;
 
     /**
-     * Used when we have a password and we want to get an instance of the class
+     * Used when we have a databasePin and we want to get an instance of the class
      * so that we can call load(File, char[])  
      */
     public PasswordDatabasePersistence() {
     }
 
     /**
-     * Used when we want to create a new database with the given password
-     * @param password
+     * Used when we want to create a new database with the given databasePin
+     * @param databasePin
      * @throws CryptoException
+     * @throws com._17od.upm.crypto.InvalidPasswordException
      */
-    public PasswordDatabasePersistence(char[] password) throws CryptoException {
-        encryptionService = new EncryptionService(password);
+    public PasswordDatabasePersistence(char[] databasePin) throws CryptoException, InvalidPasswordException, SmartUPMAppletException {
+        encryptionService = new EncryptionService(databasePin);
     }
 
     public PasswordDatabase load(File databaseFile) throws InvalidPasswordException, ProblemReadingDatabaseFile, IOException {
@@ -89,8 +85,8 @@ public class PasswordDatabasePersistence {
         byte[] fullDatabase = readFile(databaseFile);
 
         // Check the database is a minimum length
-        if (fullDatabase.length < EncryptionService.SALT_LENGTH) {
-            throw new ProblemReadingDatabaseFile("This file doesn't appear to be a UPM password database");
+        if (fullDatabase.length < FILE_HEADER.getBytes().length+EncryptionService.DBID_LENGTH) {
+            throw new ProblemReadingDatabaseFile("This file doesn't appear to be a SmartUPM password database");
         }
 
         PasswordDatabase passwordDatabase = null;
@@ -101,32 +97,25 @@ public class PasswordDatabasePersistence {
         Charset charset = Charset.forName("UTF-8");
 
         // Ensure this is a real UPM database by checking for the existence of 
-        // the string "UPM" at the start of the file
+        // the string "SmartUPM" at the start of the file
         byte[] header = new byte[FILE_HEADER.getBytes().length];
         System.arraycopy(fullDatabase, 0, header, 0, header.length);
         if (Arrays.equals(header, FILE_HEADER.getBytes())) {
 
             // Calculate the positions of each item in the file
             int dbVersionPos      = header.length;
-            int saltPos           = dbVersionPos + 1;
-            int encryptedBytesPos = saltPos + EncryptionService.SALT_LENGTH;
+            int dbidPos           = dbVersionPos + 1;
+            int encryptedBytesPos = dbidPos + EncryptionService.DBID_LENGTH;
 
             // Get the database version 
             byte dbVersion = fullDatabase[dbVersionPos];
 
-            if (dbVersion == 2 || dbVersion == 3) {
-                byte[] salt = new byte[EncryptionService.SALT_LENGTH];
-                System.arraycopy(fullDatabase, saltPos, salt, 0, EncryptionService.SALT_LENGTH);
+            if (dbVersion == 3) {
+                byte[] dbid = new byte[EncryptionService.DBID_LENGTH];
+                System.arraycopy(fullDatabase, dbidPos, dbid, 0, EncryptionService.DBID_LENGTH);
                 int encryptedBytesLength = fullDatabase.length - encryptedBytesPos;
                 byte[] encryptedBytes = new byte[encryptedBytesLength]; 
                 System.arraycopy(fullDatabase, encryptedBytesPos, encryptedBytes, 0, encryptedBytesLength);
-
-                // From version 3 onwards Strings in AccountInformation are
-                // encoded using UTF-8. To ensure we can still open older dbs
-                // we default back to the then character set, the system default
-                if (dbVersion < 3) {
-                    charset = Util.defaultCharset();
-                }
 
                 //Attempt to decrypt the database information
                 byte[] decryptedBytes;
@@ -158,33 +147,23 @@ public class PasswordDatabasePersistence {
                 }
 
                 passwordDatabase = new PasswordDatabase(revision, dbOptions, accounts, databaseFile);
-
+                 return passwordDatabase; 
             } else {
-                throw new ProblemReadingDatabaseFile("Don't know how to handle database version [" + dbVersion + "]");
+                 throw new ProblemReadingDatabaseFile("Don't know how to handle database version [" + dbVersion + "]");    
             }
-
         } else {
-            
-            // This might be an old database (pre version 2).
-            // By throwing InvalidPasswordException the calling method can ask
-            // the user for the password so that the load(File, char[]) method
-            // can be called. That method knows how to load old versions of the
-            // db
-            throw new InvalidPasswordException();
+            throw new ProblemReadingDatabaseFile("This file doesn't appear to be a SmartUPM password database");
         }
-                
-        return passwordDatabase;
+     }
 
-    }
-
-    public PasswordDatabase load(File databaseFile, char[] password) throws IOException, ProblemReadingDatabaseFile, InvalidPasswordException, CryptoException {
+    public PasswordDatabase load(File databaseFile, char[] dbPin) throws IOException, ProblemReadingDatabaseFile, InvalidPasswordException, CryptoException, SmartUPMAppletException {
 
         byte[] fullDatabase;
         fullDatabase = readFile(databaseFile);
 
         // Check the database is a minimum length
-        if (fullDatabase.length < EncryptionService.SALT_LENGTH) {
-            throw new ProblemReadingDatabaseFile("This file doesn't appear to be a UPM password database");
+        if (fullDatabase.length < FILE_HEADER.getBytes().length+EncryptionService.DBID_LENGTH) {
+            throw new ProblemReadingDatabaseFile("This file doesn't appear to be a SmartUPM password database");
         }
 
         ByteArrayInputStream is = null;
@@ -192,38 +171,31 @@ public class PasswordDatabasePersistence {
         DatabaseOptions dbOptions = null;
         Charset charset = Charset.forName("UTF-8");
 
-        // Ensure this is a real UPM database by checking for the existence of 
-        // the string "UPM" at the start of the file
+        // Ensure this is a real SmartUPM database by checking for the existence of 
+        // the string "SmartUPM" at the start of the file
         byte[] header = new byte[FILE_HEADER.getBytes().length];
         System.arraycopy(fullDatabase, 0, header, 0, header.length);
         if (Arrays.equals(header, FILE_HEADER.getBytes())) {
 
             // Calculate the positions of each item in the file
             int dbVersionPos      = header.length;
-            int saltPos           = dbVersionPos + 1;
-            int encryptedBytesPos = saltPos + EncryptionService.SALT_LENGTH;
+            int dbidPos           = dbVersionPos + 1;
+            int encryptedBytesPos = dbidPos + EncryptionService.DBID_LENGTH;
 
             // Get the database version 
             byte dbVersion = fullDatabase[dbVersionPos];
 
-            if (dbVersion == 2 || dbVersion == 3) {
-                byte[] salt = new byte[EncryptionService.SALT_LENGTH];
-                System.arraycopy(fullDatabase, saltPos, salt, 0, EncryptionService.SALT_LENGTH);
+            if (dbVersion == 3) {
+                byte[] dbid = new byte[EncryptionService.DBID_LENGTH];
+                System.arraycopy(fullDatabase, dbidPos, dbid, 0, EncryptionService.DBID_LENGTH);
                 int encryptedBytesLength = fullDatabase.length - encryptedBytesPos;
                 byte[] encryptedBytes = new byte[encryptedBytesLength]; 
                 System.arraycopy(fullDatabase, encryptedBytesPos, encryptedBytes, 0, encryptedBytesLength);
 
-                // From version 3 onwards Strings in AccountInformation are
-                // encoded using UTF-8. To ensure we can still open older dbs
-                // we default back to the then character set, the system default
-                if (dbVersion < 3) {
-                    charset = Util.defaultCharset();
-                }
-
                 //Attempt to decrypt the database information
-                encryptionService = new EncryptionService(password, salt);
                 byte[] decryptedBytes;
                 try {
+                    encryptionService = new EncryptionService(dbPin, dbid);
                     decryptedBytes = encryptionService.decrypt(encryptedBytes);
                 } catch (CryptoException e) {
                     throw new InvalidPasswordException();
@@ -236,68 +208,25 @@ public class PasswordDatabasePersistence {
             } else {
                 throw new ProblemReadingDatabaseFile("Don't know how to handle database version [" + dbVersion + "]");
             }
-
-        } else {
-            
-            // This might be an old database (pre version 2) so try loading it using the old database format
-            
-            // Check the database is a minimum length
-            if (fullDatabase.length < EncryptionService.SALT_LENGTH) {
-                throw new ProblemReadingDatabaseFile("This file doesn't appear to be a UPM password database");
-            }
-            
-            //Split up the salt and encrypted bytes
-            byte[] salt = new byte[EncryptionService.SALT_LENGTH];
-            System.arraycopy(fullDatabase, 0, salt, 0, EncryptionService.SALT_LENGTH);
-            int encryptedBytesLength = fullDatabase.length - EncryptionService.SALT_LENGTH;
-            byte[] encryptedBytes = new byte[encryptedBytesLength]; 
-            System.arraycopy(fullDatabase, EncryptionService.SALT_LENGTH, encryptedBytes, 0, encryptedBytesLength);
-
-            byte[] decryptedBytes = null;
-            //Attempt to decrypt the database information
-            try {
-                decryptedBytes = DESDecryptionService.decrypt(password, salt, encryptedBytes);
-            } catch (CryptoException e) {
-                throw new InvalidPasswordException();
-            }
-
-            //We'll get to here if the password was correct so load up the decryped byte
-            is = new ByteArrayInputStream(decryptedBytes);
-            DatabaseHeader dh = new DatabaseHeader(is);
-
-            // At this point we'll check to see what version the database is and load it accordingly
-            if (dh.getVersion().equals("1.1.0")) {
-                // Version 1.1.0 introduced a revision number & database options so read that in now
-                revision = new Revision(is);
-                dbOptions = new DatabaseOptions(is);
-            } else if (dh.getVersion().equals("1.0.0")) {
-                revision = new Revision();
-                dbOptions = new DatabaseOptions();
-            } else {
-                throw new ProblemReadingDatabaseFile("Don't know how to handle database version [" + dh.getVersion() + "]");
-            }
-
-            // Initialise the EncryptionService so that it's ready for the "save" operation
-            encryptionService = new EncryptionService(password);
-
-        }
         
         // Read the remainder of the database in now
-        HashMap accounts = new HashMap();
-        try {
-            while (true) { //keep loading accounts until an EOFException is thrown
-                AccountInformation ai = new AccountInformation(is, charset);
-                accounts.put(ai.getAccountName(), ai);
+            HashMap accounts = new HashMap();
+            try {
+                while (true) { //keep loading accounts until an EOFException is thrown
+                    AccountInformation ai = new AccountInformation(is, charset);
+                    accounts.put(ai.getAccountName(), ai);
+                }
+            } catch (EOFException e) {
+                //just means we hit eof
             }
-        } catch (EOFException e) {
-            //just means we hit eof
+            is.close();
+
+            PasswordDatabase passwordDatabase = new PasswordDatabase(revision, dbOptions, accounts, databaseFile);
+            return passwordDatabase;
+ 
+        } else{
+            throw new ProblemReadingDatabaseFile("This file doesn't appear to be a SmartUPM password database");
         }
-        is.close();
-
-        PasswordDatabase passwordDatabase = new PasswordDatabase(revision, dbOptions, accounts, databaseFile);
-        
-        return passwordDatabase;
-
     }
 
     public void save(PasswordDatabase database) throws IOException, CryptoException {
@@ -324,7 +253,7 @@ public class PasswordDatabasePersistence {
         FileOutputStream fos = new FileOutputStream(database.getDatabaseFile());
         fos.write(FILE_HEADER.getBytes());
         fos.write(DB_VERSION);
-        fos.write(encryptionService.getSalt());
+        fos.write(encryptionService.getDbid());
         fos.write(encryptedData);
         fos.close();
     }

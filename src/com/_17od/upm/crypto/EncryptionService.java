@@ -21,8 +21,12 @@
 package com._17od.upm.crypto;
 
 
+import com._17od.upm.util.Util;
+import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
@@ -34,40 +38,50 @@ import org.bouncycastle.crypto.generators.PKCS12ParametersGenerator;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
 import org.bouncycastle.crypto.paddings.PKCS7Padding;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.crypto.params.*;
 import smartupm.jcardmngr.*;
 
 
 public class EncryptionService {
 
-    private static final String randomAlgorithm = "SHA1PRNG";
-    public static final short SALT_LENGTH = 8;
-    private byte[] salt;
+//    private static final String randomAlgorithm = "SHA1PRNG";
+    public static final short DBID_LENGTH = 1;
+    public static final short AESKEY_LENGTH = 32;
+    public static final short IV_LENGTH = 16;
+    private byte[] dbid;
+    private byte[] appletKeyResponse;
     private BufferedBlockCipher encryptCipher;
     private BufferedBlockCipher decryptCipher;
-    private AppletInterface appIface;
+    private static AppletInterface appIface;
     
-    public EncryptionService(char[] password) throws CryptoException {
-        try {
-            this.salt = generateSalt();
-        } catch (NoSuchAlgorithmException e) {
-            throw new CryptoException(e);
+    public EncryptionService(char[] databasePin) throws SmartUPMAppletException, InvalidPasswordException {
+        this(databasePin,null);
+    }
+
+    public EncryptionService(char[] databasePin, byte[] dbid) throws SmartUPMAppletException, InvalidPasswordException {
+        if (appIface==null) appIface=new AppletInterface();  //the check for null is needed because of card simulator, to have applet persistency
+        this.dbid=dbid;
+        initCipher(databasePin);
+    }
+
+    private void initCipher(char[] databasePin) throws SmartUPMAppletException, InvalidPasswordException {
+        byte[] databasePinBytes=new String(databasePin).getBytes(Charset.forName("UTF-8"));
+        try{
+            if (dbid==null) {
+                // call without dbid means we are setting up new DB and are sending PIN to applet. Applet will return new DBID or AppletInterface will throw exception.
+                dbid=appIface.sendAppletInstruction(AppletInterface.SEND_INS_SETKEY,(byte)0, (byte) 0, databasePinBytes);
+            }
+            // here we ask applet for keys for given dbid and PIN. (if creating new DB, we just return the dbid we just received above.
+            appletKeyResponse=appIface.sendAppletInstruction(AppletInterface.SEND_INS_GETKEY,(byte)0, (byte) 0, Util.mergeArrays(dbid,databasePinBytes));    
         }
-        initCipher(password);
-    }
-
-    public EncryptionService(char[] password, byte[] salt) {
-        this.salt = salt;
-        initCipher(password);
-    }
-
-    public void initCipher(char[] password) {
-        byte[] pass= new byte [SALT_LENGTH];
-        appIface=new AppletInterface();
-        pass=appIface.sendApduAndReceive(AppletInterface.SEND_INS_RETURN,(byte)0, (byte) 0, salt);
+        catch (SmartUPMAppletException | InvalidPasswordException ex){
+            throw ex;
+        }
         
-        PBEParametersGenerator keyGenerator = new PKCS12ParametersGenerator(new SHA256Digest());
-        keyGenerator.init(pass, salt, 20);
-        CipherParameters keyParams = keyGenerator.generateDerivedParameters(256, 128);
+        //if we get here without exception, we received AES key and IV from applet without exception (no IO problems, PIN was accepted etc.)
+        //we initialize the cipher engine with received key and IV.
+        KeyParameter aesKey=new KeyParameter(Util.cutArray(appletKeyResponse,DBID_LENGTH,AESKEY_LENGTH));
+        ParametersWithIV keyParams = new ParametersWithIV(aesKey, Util.cutArray(appletKeyResponse, DBID_LENGTH+AESKEY_LENGTH, IV_LENGTH));
                        
                 
         encryptCipher = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()), new PKCS7Padding());
@@ -76,12 +90,6 @@ public class EncryptionService {
         decryptCipher.init(false, keyParams);
     }
 
-    private byte[] generateSalt() throws NoSuchAlgorithmException {
-        SecureRandom saltGen = SecureRandom.getInstance(randomAlgorithm);
-        byte pSalt[] = new byte[SALT_LENGTH];
-        saltGen.nextBytes(pSalt);
-        return pSalt;
-    }
 
     public byte[] encrypt(byte[] plainText) throws CryptoException {
         byte[] encryptedBytes = new byte[encryptCipher.getOutputSize(plainText.length)];
@@ -111,8 +119,8 @@ public class EncryptionService {
         return results;
     }
 
-    public byte[] getSalt() {
-        return salt;
+    public byte[] getDbid() {
+        return dbid;
     }
 
 }

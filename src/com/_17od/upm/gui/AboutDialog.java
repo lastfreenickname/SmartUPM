@@ -44,21 +44,17 @@ public class AboutDialog extends EscapeDialog {
     public AboutDialog(JFrame frame) {
         super(frame, Translator.translate("aboutUPM"), true);
 
-        String version = AboutDialog.class.getPackage().getImplementationVersion();
-        if (version == null) {
-            version = "<version unknown>";
-        }
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 
         JTextArea jTextArea = new JTextArea();
         StringBuffer aboutText = new StringBuffer();
-        aboutText.append("Universal Password Manager\n");
-        aboutText.append(version);
-        aboutText.append("\n\n");
-        aboutText.append("Copyright \u00a9 2005-2013 Adrian Smith & Contributors\n\n");
-        aboutText.append("adrian@17od.com\n");
+        aboutText.append("SmartUPM\n");
+        aboutText.append("Password Manager with Javacard support for Master Password\n");
+        aboutText.append("Verah Mnisi, Neelesh K. Tamrakar, Petr Vesely\n\n");
+        aboutText.append("forked from Universal Password Manager v. 1.14\n");
+        aboutText.append("Copyright \u00a9 2005-2013 Adrian Smith & Contributors\n");
         aboutText.append("http://upm.sourceforge.net");
         jTextArea.setText(aboutText.toString());
         jTextArea.setAlignmentX(Component.CENTER_ALIGNMENT);

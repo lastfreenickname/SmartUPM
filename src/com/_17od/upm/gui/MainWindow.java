@@ -84,6 +84,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import smartupm.jcardmngr.SmartUPMAppletException;
 
 /**
  * This is the main application entry class
@@ -91,13 +94,13 @@ import java.util.Arrays;
 public class MainWindow extends JFrame implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
-	private static final String applicationName = "Universal Password Manager";
+	private static final String applicationName = "SmartUPM";
 
 	public static final String NEW_DATABASE_TXT = "newDatabaseMenuItem";
 	public static final String OPEN_DATABASE_TXT = "openDatabaseMenuItem";
 	public static final String OPEN_DATABASE_FROM_URL_TXT = "openDatabaseFromURLMenuItem";
 	public static final String SYNC_DATABASE_TXT = "syncWithRemoteDatabaseMenuItem";
-	public static final String CHANGE_MASTER_PASSWORD_TXT = "changeMasterPasswordMenuItem";
+//	public static final String CHANGE_MASTER_PASSWORD_TXT = "changeMasterPasswordMenuItem"; // not supported
 	public static final String DATABASE_PROPERTIES_TXT = "databasePropertiesMenuItem";
 	public static final String ADD_ACCOUNT_TXT = "addAccountMenuItem";
 	public static final String EDIT_ACCOUNT_TXT = "editAccountMenuItem";
@@ -131,7 +134,7 @@ public class MainWindow extends JFrame implements ActionListener {
 	private JMenuItem openDatabaseMenuItem;
 	private JMenuItem openDatabaseFromURLMenuItem;
 	private JMenuItem syncWithRemoteDatabaseMenuItem;
-	private JMenuItem changeMasterPasswordMenuItem;
+//	private JMenuItem changeMasterPasswordMenuItem;  // not supported
 	private JMenuItem databasePropertiesMenuItem;
 	private JMenuItem exitMenuItem;
 	private JMenu helpMenu;
@@ -419,7 +422,10 @@ public class MainWindow extends JFrame implements ActionListener {
 					} catch (IOException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
-					}
+					} catch (SmartUPMAppletException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+                                    }
 
 				}
 			}
@@ -661,13 +667,14 @@ public class MainWindow extends JFrame implements ActionListener {
 		syncWithRemoteDatabaseMenuItem.setEnabled(false);
 		syncWithRemoteDatabaseMenuItem.setActionCommand(SYNC_DATABASE_TXT);
 
-		changeMasterPasswordMenuItem = new JMenuItem(Translator.translate(CHANGE_MASTER_PASSWORD_TXT), KeyEvent.VK_G);
-		changeMasterPasswordMenuItem.setAccelerator(
-				KeyStroke.getKeyStroke(KeyEvent.VK_G, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
-		databaseMenu.add(changeMasterPasswordMenuItem);
-		changeMasterPasswordMenuItem.addActionListener(this);
-		changeMasterPasswordMenuItem.setEnabled(false);
-		changeMasterPasswordMenuItem.setActionCommand(CHANGE_MASTER_PASSWORD_TXT);
+//              Change of database PIN not supported
+//		changeMasterPasswordMenuItem = new JMenuItem(Translator.translate(CHANGE_MASTER_PASSWORD_TXT), KeyEvent.VK_G);
+//		changeMasterPasswordMenuItem.setAccelerator(
+//				KeyStroke.getKeyStroke(KeyEvent.VK_G, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+//		databaseMenu.add(changeMasterPasswordMenuItem);
+//		changeMasterPasswordMenuItem.addActionListener(this);
+//		changeMasterPasswordMenuItem.setEnabled(false);
+//		changeMasterPasswordMenuItem.setActionCommand(CHANGE_MASTER_PASSWORD_TXT);
 
 		databasePropertiesMenuItem = new JMenuItem(Translator.translate(DATABASE_PROPERTIES_TXT), KeyEvent.VK_I);
 		databasePropertiesMenuItem.setAccelerator(
@@ -1032,9 +1039,9 @@ public class MainWindow extends JFrame implements ActionListener {
 		return addAccountMenuItem;
 	}
 
-	public JMenuItem getChangeMasterPasswordMenuItem() {
-		return changeMasterPasswordMenuItem;
-	}
+//	public JMenuItem getChangeMasterPasswordMenuItem() {
+//		return changeMasterPasswordMenuItem;
+//	}
 
 	public JMenuItem getDatabasePropertiesMenuItem() {
 		return databasePropertiesMenuItem;
@@ -1066,8 +1073,8 @@ public class MainWindow extends JFrame implements ActionListener {
 				dbActions.showAbout();
 			} else if (event.getActionCommand() == MainWindow.RESET_SEARCH_TXT) {
 				dbActions.resetSearch();
-			} else if (event.getActionCommand() == MainWindow.CHANGE_MASTER_PASSWORD_TXT) {
-				dbActions.reloadDatabaseBefore(new ChangeMasterPasswordAction());
+//			} else if (event.getActionCommand() == MainWindow.CHANGE_MASTER_PASSWORD_TXT) {
+//				dbActions.reloadDatabaseBefore(new ChangeMasterPasswordAction());
 			} else if (event.getActionCommand() == MainWindow.DATABASE_PROPERTIES_TXT) {
 				dbActions.reloadDatabaseBefore(new ShowDatabasePropertiesAction());
 			} else if (event.getActionCommand() == MainWindow.EXIT_TXT) {
@@ -1116,7 +1123,7 @@ public class MainWindow extends JFrame implements ActionListener {
 		openDatabaseMenuItem.setText(Translator.translate(OPEN_DATABASE_TXT));
 		openDatabaseFromURLMenuItem.setText(Translator.translate(OPEN_DATABASE_FROM_URL_TXT));
 		syncWithRemoteDatabaseMenuItem.setText(Translator.translate(SYNC_DATABASE_TXT));
-		changeMasterPasswordMenuItem.setText(Translator.translate(CHANGE_MASTER_PASSWORD_TXT));
+//		changeMasterPasswordMenuItem.setText(Translator.translate(CHANGE_MASTER_PASSWORD_TXT));
 		databasePropertiesMenuItem.setText(Translator.translate(DATABASE_PROPERTIES_TXT));
 		accountMenu.setText(Translator.translate("accountMenu"));
 		addAccountMenuItem.setText(Translator.translate(ADD_ACCOUNT_TXT));
@@ -1169,15 +1176,16 @@ public class MainWindow extends JFrame implements ActionListener {
 		}
 	}
 
-	private class ChangeMasterPasswordAction implements ChangeDatabaseAction {
-		public void doAction() {
-			try {
-				dbActions.changeMasterPassword();
-			} catch (Exception e) {
-				dbActions.errorHandler(e);
-			}
-		}
-	}
+// Change database PIN not supported        
+//	private class ChangeMasterPasswordAction implements ChangeDatabaseAction {
+//		public void doAction() {
+//			try {
+//				dbActions.changeMasterPassword();
+//			} catch (Exception e) {
+//				dbActions.errorHandler(e);
+//			}
+//		}
+//	}
 
 	private class DeleteAccountAction implements ChangeDatabaseAction {
 		public void doAction() {

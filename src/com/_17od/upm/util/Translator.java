@@ -28,8 +28,9 @@ import java.util.ResourceBundle;
 public class Translator {
 
     public static Locale[] SUPPORTED_LOCALES = {
-        Locale.ENGLISH, Locale.FRENCH, Locale.GERMAN,Locale.ITALIAN, new Locale("es"),
-        new Locale("nl"),new Locale("pl"),new Locale("el"),new Locale("cs")};
+        Locale.ENGLISH};
+//            , Locale.FRENCH, Locale.GERMAN,Locale.ITALIAN, new Locale("es"),
+//        new Locale("nl"),new Locale("pl"),new Locale("el"),new Locale("cs")};
         
     private static ResourceBundle resourceBundle;
     private static MessageFormat formatter;
