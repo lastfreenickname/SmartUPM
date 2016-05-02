@@ -3,7 +3,7 @@ package testapplet;
 // specific import for Javacard API access
 import javacard.framework.*;
 import javacard.security.*;
-import javacardx.crypto.*;
+//import javacardx.crypto.*;
 
 public class CardApplet extends javacard.framework.Applet
 {
@@ -22,19 +22,24 @@ public class CardApplet extends javacard.framework.Applet
 
     private   AESKey[]         KeyArray = new AESKey[DB_CNT];
     private   AESKey[]         IVArray = new AESKey[DB_CNT];
-    private   OwnerPIN[]        PINArray = new OwnerPIN[DB_CNT];
+    private   OwnerPIN[]       PINArray = new OwnerPIN[DB_CNT];
     
     private   byte           NumKey = 0;
     private   byte           DBID = 0;
     private   RandomData     m_secureRandom = null;
     
+    private   byte          Temp [] = null;
+    private   byte          RandomNumber[] = null;
+    
     protected CardApplet(byte[] buffer, short offset, byte length)
     {   
          m_secureRandom = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
         register();
-        for(short i=0; i<DB_CNT; i++) PINArray[i] = new OwnerPIN((byte) 3, (byte) PIN_LEN);
+        for(short i=0; i<DB_CNT; i++) PINArray[i] = new OwnerPIN((byte) 3, PIN_LEN);
         for(short i=0; i<DB_CNT; i++) KeyArray[i] = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_256, false);
         for(short i=0; i<DB_CNT; i++) IVArray[i] = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
+        Temp = JCSystem.makeTransientByteArray(KEY_SIZE, JCSystem.CLEAR_ON_DESELECT);
+        RandomNumber = JCSystem.makeTransientByteArray((byte)(KEY_SIZE+IV_SIZE), JCSystem.CLEAR_ON_DESELECT);
     }
 
     public static void install(byte[] bArray, short bOffset, byte bLength) throws ISOException
@@ -69,10 +74,9 @@ public class CardApplet extends javacard.framework.Applet
     void SetKey(APDU apdu) {
       byte[]    apdubuf = apdu.getBuffer();
       short     dataLen = apdu.setIncomingAndReceive();
-      byte[]    RandomNumber = new byte[KEY_SIZE+IV_SIZE];
       m_secureRandom.generateData(RandomNumber, (byte)0, (byte) (KEY_SIZE+IV_SIZE));
       KeyArray[NumKey].setKey(RandomNumber, (byte)0);  
-      IVArray[NumKey].setKey(RandomNumber, (byte)KEY_SIZE);   
+      IVArray[NumKey].setKey(RandomNumber, KEY_SIZE);   
       PINArray[NumKey].update(apdubuf,ISO7816.OFFSET_CDATA, (byte)dataLen);
       NumKey++;
       //Send DBID
@@ -84,18 +88,14 @@ public class CardApplet extends javacard.framework.Applet
      void GetKey(APDU apdu) {
       byte[]    apdubuf = apdu.getBuffer();
       short     dataLen = apdu.setIncomingAndReceive();
-      byte[]    Temp = new byte[32];
-      byte match=1;
       DBID = apdubuf[ISO7816.OFFSET_CDATA];
       if (PINArray[DBID].check(apdubuf, (byte)(ISO7816.OFFSET_CDATA+1), (byte) (dataLen-1)) == true)
       {
-        apdubuf[ISO7816.OFFSET_CDATA] = (byte)DBID;
+        apdubuf[ISO7816.OFFSET_CDATA] = DBID;
         KeyArray[DBID].getKey(Temp, (byte)0);
-        for(short i=0; i<KEY_SIZE; i++)
-          apdubuf[i+ISO7816.OFFSET_CDATA+1] = Temp[i];
+        Util.arrayCopy(Temp, (byte)0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+1), KEY_SIZE);
         IVArray[DBID].getKey(Temp, (byte)0);
-        for(short i=0; i<IV_SIZE; i++)
-          apdubuf[i+ISO7816.OFFSET_CDATA+33] = Temp[i];              
+        Util.arrayCopy(Temp, (byte)0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+33), IV_SIZE);  
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (byte)(1+KEY_SIZE+IV_SIZE));
         return;
       }
