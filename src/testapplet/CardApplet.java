@@ -3,7 +3,7 @@ package testapplet;
 // specific import for Javacard API access
 import javacard.framework.*;
 import javacard.security.*;
-//import javacardx.crypto.*;
+import javacardx.crypto.*;
 
 public class CardApplet extends javacard.framework.Applet
 {
@@ -30,8 +30,14 @@ public class CardApplet extends javacard.framework.Applet
     
     private   byte          Temp [] = null;
     private   byte          RandomNumber[] = null;
-    
-    protected CardApplet(byte[] buffer, short offset, byte length)
+
+    private   AESKey         m_aesKey = null;
+    private   Cipher         m_encryptCipher = null;
+    private   Cipher         m_decryptCipher = null;
+    private   byte           m_ramArray[] = null;  // TEMPORARRY ARRAY IN RAM
+
+   private static     byte[] key = {(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05, (byte) 0x06,(byte) 0x07,(byte) 0x08, (byte) 0x09, (byte) 0x0A, (byte) 0x0B, (byte) 0x0C, (byte) 0x0D, (byte) 0x0E,(byte) 0x0F};
+     protected CardApplet(byte[] buffer, short offset, byte length)
     {   
          m_secureRandom = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
         register();
@@ -40,6 +46,17 @@ public class CardApplet extends javacard.framework.Applet
         for(short i=0; i<DB_CNT; i++) IVArray[i] = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
         Temp = JCSystem.makeTransientByteArray(KEY_SIZE, JCSystem.CLEAR_ON_DESELECT);
         RandomNumber = JCSystem.makeTransientByteArray((byte)(KEY_SIZE+IV_SIZE), JCSystem.CLEAR_ON_DESELECT);
+        
+        m_aesKey = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
+        m_encryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+        m_decryptCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+        
+        m_ramArray = new byte[16];
+        m_ramArray = JCSystem.makeTransientByteArray((short) 16, JCSystem.CLEAR_ON_DESELECT);
+        m_aesKey.setKey(key, (short) 0);
+        m_encryptCipher.init(m_aesKey, Cipher.MODE_ENCRYPT);
+        //m_decryptCipher.init(m_aesKey, Cipher.MODE_DECRYPT);
+        
     }
 
     public static void install(byte[] bArray, short bOffset, byte bLength) throws ISOException
@@ -95,7 +112,17 @@ public class CardApplet extends javacard.framework.Applet
         KeyArray[DBID].getKey(Temp, (byte)0);
         Util.arrayCopy(Temp, (byte)0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+1), KEY_SIZE);
         IVArray[DBID].getKey(Temp, (byte)0);
-        Util.arrayCopy(Temp, (byte)0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+33), IV_SIZE);  
+        Util.arrayCopy(Temp, (byte)0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+33), IV_SIZE);
+        
+        //Encrypt 
+        m_encryptCipher.doFinal(apdubuf, (byte)(ISO7816.OFFSET_CDATA+1), (byte)16, m_ramArray, (short) 0);
+        Util.arrayCopyNonAtomic(m_ramArray, (short) 0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+1), (byte)16);
+        m_encryptCipher.doFinal(apdubuf, (byte)(ISO7816.OFFSET_CDATA+17), (byte)16, m_ramArray, (short) 0);
+        Util.arrayCopyNonAtomic(m_ramArray, (short) 0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+17), (byte)16);
+        m_encryptCipher.doFinal(apdubuf, (byte)(ISO7816.OFFSET_CDATA+33), (byte)16, m_ramArray, (short) 0);
+        Util.arrayCopyNonAtomic(m_ramArray, (short) 0, apdubuf, (byte)(ISO7816.OFFSET_CDATA+33), (byte)16);
+        
+        
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (byte)(1+KEY_SIZE+IV_SIZE));
         return;
       }
