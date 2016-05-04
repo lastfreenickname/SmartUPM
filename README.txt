@@ -1,3 +1,13 @@
+SmartUPM
+--------
+Modification of Universal Password Manager (see below) to use a Javacard applet to store database encryption keys (instead of generating them from user-entered master password and salt stored in the database file).
+256bit AES encryption keys are generated separately for each database inside a Javacard applet (whose code is also included in package testapplet in the repository) and access to the keys is protected by PIN (also chosen separately for each database) with maximum 3 unsuccessful attempts, after which keys are permanently erased.
+
+Team project for a Security Technologies course at Masaryk University in Brno, Czech Republic
+Contributors: Neelesh Kumar Tamrakar, Verah Mnisi, Petr Veselý
+
+--------------------------------------------------------------
+
 Universal Password Manager
 --------------------------
 http://upm.sourceforge.net
