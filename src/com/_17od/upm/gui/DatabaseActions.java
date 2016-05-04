@@ -36,7 +36,6 @@ import java.util.Arrays;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.JPasswordField;
 import javax.swing.Timer;
 
 import org.apache.commons.logging.Log;
@@ -100,12 +99,12 @@ public class DatabaseActions {
             return;
         }
 
-        final JPasswordField masterPassword = new JPasswordField("");
+        final JPasswordFieldLimit masterPassword = new JPasswordFieldLimit(16);
         boolean passwordsMatch = false;
         do {
 
             //Get a new master password for this database from the user
-            JPasswordField confirmedMasterPassword = new JPasswordField("");
+            JPasswordFieldLimit confirmedMasterPassword = new JPasswordFieldLimit(16);
             JOptionPane pane = new JOptionPane(new Object[] {Translator.translate("enterMasterPassword"), masterPassword, Translator.translate("confirmation"), confirmedMasterPassword}, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
             JDialog dialog = pane.createDialog(mainWindow, Translator.translate("masterPassword"));
             dialog.addWindowFocusListener(new WindowAdapter() {
@@ -350,7 +349,7 @@ public class DatabaseActions {
     private char[] askUserForPassword(String message) {
         char[] password = null;
 
-        final JPasswordField masterPassword = new JPasswordField("");
+        final JPasswordFieldLimit masterPassword = new JPasswordFieldLimit(16);
         JOptionPane pane = new JOptionPane(new Object[] {message, masterPassword }, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
         JDialog dialog = pane.createDialog(mainWindow, Translator.translate("masterPassword"));
         dialog.addWindowFocusListener(new WindowAdapter() {
@@ -394,7 +393,10 @@ public class DatabaseActions {
                     database = dbPers.load(new File(databaseFilename), password);
                     passwordCorrect = true;
                 } catch (InvalidPasswordException e) {
-                    JOptionPane.showMessageDialog(mainWindow, Translator.translate("incorrectPassword"));
+                    String message=e.getMessage();
+                    if(message==null) JOptionPane.showMessageDialog(mainWindow, Translator.translate("incorrectPassword"));
+                    else JOptionPane.showMessageDialog(mainWindow, Translator.translate("incorrectPassword") + message);
+                    
                     password = null;
                 }
             }

@@ -22,4 +22,13 @@ package com._17od.upm.crypto;
 
 public class InvalidPasswordException extends Exception {
     private static final long serialVersionUID = 1L;
+    
+    public InvalidPasswordException(String message) {
+        super(message);
+    }
+    
+    public InvalidPasswordException() {
+        super();
+    }
+    
 }

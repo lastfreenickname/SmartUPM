@@ -7,9 +7,7 @@
 package smartupm.jcardmngr;
 
 import com.licel.jcardsim.io.CAD;
-import com.licel.jcardsim.io.JavaxSmartCardInterface;
 import java.util.List;
-import javacard.framework.AID;
 import javax.smartcardio.*;
 
 /**
@@ -25,7 +23,6 @@ public class CardMngr {
     
     // Simulator related attributes
     private static CAD m_cad = null;
-//    private static JavaxSmartCardInterface m_simulator = null;
 
     
     private final byte selectCM[] = {
@@ -39,8 +36,7 @@ public class CardMngr {
     public static final byte OFFSET_LC = 0x04;
     public static final byte OFFSET_DATA = 0x05;
     public static final byte HEADER_LENGTH = 0x05;
-//    public final static short DATA_RECORD_LENGTH = (short) 0x80; // 128B per record
-//    public final static short NUMBER_OF_RECORDS = (short) 0x0a; // 10 records
+
 
     public boolean ConnectToCard() throws CardException {
         // TRY ALL READERS, FIND FIRST SELECTABLE
@@ -53,16 +49,16 @@ public class CardMngr {
         //List numbers of Card readers
         boolean cardFound = false;
         for (int i = 0; i < terminalList.size(); i++) {
-            System.out.println(i + " : " + terminalList.get(i));
+//            System.out.println(i + " : " + terminalList.get(i));
             m_terminal = (CardTerminal) terminalList.get(i);
             if (m_terminal.isCardPresent()) {
                 m_card = m_terminal.connect("*");
-                System.out.println("card: " + m_card);
+//                System.out.println("card: " + m_card);
                 m_channel = m_card.getBasicChannel();
 
                 //reset the card
                 ATR atr = m_card.getATR();
-                System.out.println(bytesToHex(m_card.getATR().getBytes()));
+//                System.out.println(bytesToHex(m_card.getATR().getBytes()));
                 
                 cardFound = true;
             }
@@ -98,15 +94,15 @@ public class CardMngr {
         CommandAPDU commandAPDU;
         commandAPDU = new CommandAPDU(apdu);
 
-        System.out.println(apdu.length + ">>>>");
-        System.out.println(commandAPDU);
-
-        System.out.println(bytesToHex(commandAPDU.getBytes()));
+//        System.out.println(apdu.length + ">>>>");
+//        System.out.println(commandAPDU);
+//
+//        System.out.println(bytesToHex(commandAPDU.getBytes()));
 
         ResponseAPDU responseAPDU = m_channel.transmit(commandAPDU);
 
-        System.out.println(responseAPDU);
-        System.out.println(bytesToHex(responseAPDU.getBytes()));
+//        System.out.println(responseAPDU);
+//        System.out.println(bytesToHex(responseAPDU.getBytes()));
 
         if (responseAPDU.getSW1() == (byte) 0x61) {
             CommandAPDU apduToSend = new CommandAPDU((byte) 0x00,
@@ -114,10 +110,10 @@ public class CardMngr {
                     (int) responseAPDU.getSW1());
 
             responseAPDU = m_channel.transmit(apduToSend);
-            System.out.println(bytesToHex(responseAPDU.getBytes()));
+//            System.out.println(bytesToHex(responseAPDU.getBytes()));
         }
 
-        System.out.println("<<<<"  + responseAPDU.getBytes().length);
+//        System.out.println("<<<<"  + responseAPDU.getBytes().length);
 
         return (responseAPDU);
     }
@@ -145,29 +141,6 @@ public class CardMngr {
         }
         return (buf.toString());
     }
-    
-//    
-//    public boolean prepareLocalSimulatorApplet(byte[] appletAIDArray, byte[] installData, Class appletClass) {
-//        System.setProperty("com.licel.jcardsim.terminal.type", "2");
-//        m_cad = new CAD(System.getProperties());
-//        m_simulator = (JavaxSmartCardInterface) m_cad.getCardInterface();
-//        AID appletAID = new AID(appletAIDArray, (short) 0, (byte) appletAIDArray.length);
-//
-//        AID appletAIDRes =  m_simulator.installApplet(appletAID, appletClass, installData, (short) 0, (byte) installData.length);
-//        return m_simulator.selectApplet(appletAID);
-//    }
-//    
-//    public byte[] sendAPDUSimulator(byte apdu[]) throws Exception {
-//        System.out.println(apdu.length + " >>>>");
-//        System.out.println(bytesToHex(apdu));
-//
-//        byte[] responseBytes = m_simulator.transmitCommand(apdu);
-//
-//        System.out.println(bytesToHex(responseBytes));
-//        System.out.println("<<<< " + responseBytes.length);
-//
-//        return responseBytes;
-//    }
-   
+  
 }
 

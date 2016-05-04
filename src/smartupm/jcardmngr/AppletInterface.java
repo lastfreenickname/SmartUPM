@@ -4,11 +4,13 @@
  * and open the template in the editor.
  */
 package smartupm.jcardmngr;
-//TODO import correct applet simulation
 import com._17od.upm.crypto.InvalidPasswordException;
 import javax.smartcardio.CardException;
 import javax.smartcardio.ResponseAPDU;
-import testapplet.CardApplet;
+
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.params.*;
+
 
 /**
  *
@@ -19,42 +21,53 @@ public class AppletInterface {
 
 
     static CardMngr cardManager = new CardMngr();
-    // TODO fix applet AID to final
     private static final byte APPLET_AID[] = {
         (byte) 0x53, (byte) 0x6D, (byte) 0x61, (byte) 0x72, (byte) 0x74, 
         (byte) 0x55, (byte) 0x50, (byte) 0x4D, (byte) 0x61, (byte) 0x70, 
         (byte) 0x70, (byte) 0x6C};
-    // TODO fix applet AID to final
     private static final byte SELECT_APPLET[] = {(byte) 0x00, (byte) 0xa4, (byte) 0x04, (byte) 0x00, (byte) 0x0C,
         (byte) 0x53, (byte) 0x6D, (byte) 0x61, (byte) 0x72, (byte) 0x74, (byte) 0x55, (byte) 0x50, (byte) 0x4D, (byte) 0x61, 
         (byte) 0x70, (byte) 0x70, (byte) 0x6C};
 
     // INSTRUCTIONS
-    // TODO insert correct instructions
     public final static byte SEND_INS_GETKEY[]                = {(byte) 0xB0, (byte) 0x53};
     public final static byte SEND_INS_SETKEY[]                = {(byte) 0xB0, (byte) 0x52};
-//    public final static byte SEND_INS_RANDOM[]                = {(byte) 0xB0, (byte) 0x54};
-//    public final static byte SEND_INS_RETURN[]                = {(byte) 0xB0, (byte) 0x57};
+
     public final static byte EMPTY[]                          = {};
 
     // STATUS WORDS
-    // TODO insert correct status words
     final static short OK                               = (short) 0x9000;
     final static short SW_BAD_PIN                       = (short) 0x6900;
+    final static short SW_BAD_PIN_LASTATTEMPT           = (short) 0x6901;
     final static short SW_FILE_NOT_FOUND                = (short) 0x6A82;
+    final static short SW_DB_PERMANENTLY_LOCKED         = (short) 0x7000;
+    final static short SW_DB_COUNT_EXCEEDED             = (short) 0x7001;
+    
+    private AESEngine secure;
     
     public AppletInterface() throws CardException, SmartUPMAppletException, InvalidPasswordException {
 
         // Init real card
         ResponseAPDU responseAPDU;
-        if (cardManager.ConnectToCard()) {
-            // Select our application on card
-            responseAPDU = cardManager.sendAPDU(SELECT_APPLET);
-            parseStatusWord(responseAPDU.getBytes(), responseAPDU.getBytes().length);
+        try{
+            if (cardManager.ConnectToCard()) {
+                // Select our application on card
+                responseAPDU = cardManager.sendAPDU(SELECT_APPLET);
+                parseStatusWord(responseAPDU.getBytes(), responseAPDU.getBytes().length);
+            }
+            else {
+                throw new CardException("Unable to connect to card. Is reader connected and card inserted?");
+            }
         }
-        else {
+        catch(CardException ex){
             throw new CardException("Unable to connect to card. Is reader connected and card inserted?");
         }
+        
+        secure= new AESEngine();
+        byte[] key=new byte[16];
+        for(int i=0;i<16;i++) key[i]=(byte)i;
+        secure.init(false, new KeyParameter(key));
+        
     }
     
     
@@ -70,16 +83,11 @@ public class AppletInterface {
         apdu[CardMngr.OFFSET_LC]=(byte) additionalDataLen;
         if(additionalDataLen>0)
             System.arraycopy(additionalData,0,apdu, CardMngr.OFFSET_DATA,additionalDataLen);
-//        try {
 
             ResponseAPDU responseAPDU = cardManager.sendAPDU(apdu);
           
             return responseAPDU;
-//
-//        } catch (Exception ex) {
-//            System.out.println("Exception : " + ex);
-//        }
-//        return null;
+
     }
     
     private boolean parseStatusWord(byte[] status, int arraylength) throws SmartUPMAppletException, InvalidPasswordException{
@@ -90,8 +98,15 @@ public class AppletInterface {
                 return true;
             case SW_BAD_PIN:
                 throw new InvalidPasswordException();
+            case SW_BAD_PIN_LASTATTEMPT:
+                throw new InvalidPasswordException(" Last attempt before DB keys are erased!");
             case SW_FILE_NOT_FOUND:
                 throw new SmartUPMAppletException("SmartUPM applet not found on card.");
+            case SW_DB_PERMANENTLY_LOCKED:
+                throw new SmartUPMAppletException("DB keys were permanently erased after three unsuccessful PIN attempts.");
+            case SW_DB_COUNT_EXCEEDED:   
+                throw new SmartUPMAppletException("This applet has no room for new database keys. Buy new card for only $99.99!");
+                
             default:
                 throw new SmartUPMAppletException("Unexpected response from card or applet.");
         }
@@ -99,7 +114,6 @@ public class AppletInterface {
 
     public byte[] sendAppletInstruction(byte[] instruction, byte P1, byte P2, byte[] additionalData) throws SmartUPMAppletException, InvalidPasswordException, CardException{
 
-//        try{
             byte[] result=null;
             ResponseAPDU responseAPDU=sendApduAndReceive(instruction, P1, P2, additionalData);
 
@@ -114,12 +128,15 @@ public class AppletInterface {
             byte status[]=new byte[2];
             System.arraycopy(responseAPDU.getBytes(),responseAPDU.getBytes().length-2,status,0,2); 
 
-            if (parseStatusWord(status, status.length)) return result;
+            if (parseStatusWord(status, status.length)){
+                if(result.length==48){
+                //card returned encryption keys
+                    secure.processBlock(result, 0, result, 0);
+                    secure.processBlock(result, 16, result, 16);
+                    secure.processBlock(result, 32, result, 32);
+                }
+                return result;
+            }
             else return null;
-//        }
-//        catch(Exception ex){
-//            throw ex;
-//        }
     }
-    
 }
