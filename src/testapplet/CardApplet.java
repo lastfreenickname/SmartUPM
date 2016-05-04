@@ -8,7 +8,7 @@ import javacardx.crypto.*;
 public class CardApplet extends javacard.framework.Applet
 {
     final static byte PIN_LEN                       = (byte) 16;
-    final static byte DB_CNT                        =  (byte) 4;
+    final static byte DB_CNT                        = (byte) 16;
     final static byte IV_SIZE                       = (byte) 16;
     final static byte KEY_SIZE                      = (byte) 32;
     
@@ -18,7 +18,9 @@ public class CardApplet extends javacard.framework.Applet
     // INSTRUCTIONS
     final static byte INS_SETKEY                    = (byte) 0x52;
     final static byte INS_GETKEY                    = (byte) 0x53;
-    final static short SW_BAD_PIN                    = (short) 0x6900;
+    final static short SW_BAD_PIN                   = (short) 0x6900;
+    final static short LOCKED                       = (short) 0x7000;
+    
 
     private   AESKey[]         KeyArray = new AESKey[DB_CNT];
     private   AESKey[]         IVArray = new AESKey[DB_CNT];
@@ -96,9 +98,12 @@ public class CardApplet extends javacard.framework.Applet
       IVArray[NumKey].setKey(RandomNumber, KEY_SIZE);   
       PINArray[NumKey].update(apdubuf,ISO7816.OFFSET_CDATA, (byte)dataLen);
       NumKey++;
-      //Send DBID
-      apdubuf[ISO7816.OFFSET_CDATA] = (byte)(NumKey-1);
-      apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (byte)1);
+      if(NumKey>DB_CNT)
+        ISOException.throwIt(SW_BAD_PIN);    
+      else
+        //Send DBID
+        apdubuf[ISO7816.OFFSET_CDATA] = (byte)(NumKey-1);
+        apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (byte)1);
     }
 
     // VERIFY PIN
@@ -126,6 +131,15 @@ public class CardApplet extends javacard.framework.Applet
         apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, (byte)(1+KEY_SIZE+IV_SIZE));
         return;
       }
+      if(PINArray[DBID].getTriesRemaining()==0)
+      {
+        //Clear Key and IV  
+        Util.arrayFillNonAtomic(Temp, (short) 0, KEY_SIZE, (byte) 0);  
+        KeyArray[NumKey].setKey(Temp, (byte)0);  
+        IVArray[NumKey].setKey(Temp, (byte)0);  
+        ISOException.throwIt(LOCKED);
+      }
+      else
        ISOException.throwIt(SW_BAD_PIN);
       
     }
